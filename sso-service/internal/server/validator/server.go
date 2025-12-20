@@ -13,7 +13,7 @@ type ValidatorServer struct {
 }
 
 type Validator interface {
-	Validate(ctx context.Context, token []byte) (bool, error)
+	Validate(ctx context.Context, token string) (bool, error)
 }
 
 func New(port int, validator Validator) *ValidatorServer {
@@ -24,7 +24,7 @@ func New(port int, validator Validator) *ValidatorServer {
 }
 
 func (s *ValidatorServer) Validate(ctx context.Context, in *proto.ValidatorRequest) (*proto.ValidatorResponse, error) {
-	isValid, err := s.validator.Validate(ctx, []byte(in.Token))
+	isValid, err := s.validator.Validate(ctx, in.Token)
 	if err != nil {
 		return nil, err
 	}

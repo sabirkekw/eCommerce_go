@@ -51,6 +51,12 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		}
 		return "", err
 	}
+
+	err = bcrypt.CompareHashAndPassword(existingUser.PassHash, []byte(password))
+	if err != nil {
+		return "", err
+	}
+
 	claims := jwt.MapClaims{
 		"user_id": existingUser.ID,
 		"exp":     time.Now().Add(time.Minute * 5).Unix(),
