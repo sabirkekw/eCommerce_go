@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "github.com/sabirkekw/ecommerce_go/pkg/api/sso;sso";
+
+message RegisterRequest {
+    string first_name = 1;
+    string last_name = 2;
+    string email = 3;
+    string password = 4;
+}
+
+message RegisterResponse {
+    int64 id = 1; 
+}
+
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    string token = 1;
+}
+
+message ValidatorRequest {
+    string token = 1;
+}
+
+message ValidatorResponse {
+    bool is_valid = 1;
+}
+
+service Auth {
+    rpc register (RegisterRequest) returns (RegisterResponse);
+    rpc login (LoginRequest) returns (LoginResponse);
+}
+
+service Validator {
+    rpc validate (ValidatorRequest) returns (ValidatorResponse);
+}
