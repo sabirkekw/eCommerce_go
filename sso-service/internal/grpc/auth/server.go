@@ -4,24 +4,30 @@ import (
 	"context"
 
 	proto "github.com/sabirkekw/ecommerce_go/pkg/api/sso"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type AuthServer struct {
-	port int
-	auth Auth
+	auth   AuthService
+	logger *zap.SugaredLogger
 	proto.UnimplementedAuthServer
 }
 
-type Auth interface {
+type AuthService interface {
 	Login(ctx context.Context, email string, password string) (token string, err error)
 	Register(ctx context.Context, firstName string, lastName string, email string, password string) (userID int64, err error)
 }
 
-func New(port int, auth Auth) *AuthServer {
+func New(auth AuthService, logger *zap.SugaredLogger) *AuthServer {
 	return &AuthServer{
-		port: port,
-		auth: auth,
+		auth:   auth,
+		logger: logger,
 	}
+}
+
+func Register(grpc *grpc.Server, server *AuthServer) {
+	proto.RegisterAuthServer(grpc, server)
 }
 
 func (s *AuthServer) Register(ctx context.Context, in *proto.RegisterRequest) (*proto.RegisterResponse, error) {

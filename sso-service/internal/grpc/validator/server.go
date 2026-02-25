@@ -4,23 +4,29 @@ import (
 	"context"
 
 	proto "github.com/sabirkekw/ecommerce_go/pkg/api/sso"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 type ValidatorServer struct {
-	port      int
-	validator Validator
+	validator ValidatorService
+	logger    *zap.SugaredLogger
 	proto.UnimplementedValidatorServer
 }
 
-type Validator interface {
+type ValidatorService interface {
 	Validate(ctx context.Context, token string) (bool, error)
 }
 
-func New(port int, validator Validator) *ValidatorServer {
+func New(validator ValidatorService, logger *zap.SugaredLogger) *ValidatorServer {
 	return &ValidatorServer{
-		port:      port,
 		validator: validator,
+		logger:    logger,
 	}
+}
+
+func Register(grpc *grpc.Server, server *ValidatorServer) {
+	proto.RegisterValidatorServer(grpc, server)
 }
 
 func (s *ValidatorServer) Validate(ctx context.Context, in *proto.ValidatorRequest) (*proto.ValidatorResponse, error) {

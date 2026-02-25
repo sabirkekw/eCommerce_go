@@ -27,7 +27,7 @@ type Config struct {
 
 func MustLoad() *Config {
 	var cfg Config
-	if err := cleanenv.ReadConfig("./config/local.yaml", &cfg); err != nil {
+	if err := cleanenv.ReadConfig("./config/order-service/local.yaml", &cfg); err != nil {
 		panic(err)
 	}
 	return &cfg

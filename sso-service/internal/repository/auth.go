@@ -23,7 +23,7 @@ func New(db *sql.DB, builder sq.StatementBuilderType) *UserRepository {
 	}
 }
 
-func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastName string, email string, hash []byte) (int, error) {
+func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastName string, email string, hash []byte) (int64, error) {
 	query := s.builder.Insert("users").
 		Columns("firstname", "lastname", "email", "hash").
 		Values(firstName, lastName, email, hash).
@@ -34,7 +34,7 @@ func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastN
 		return 0, err
 	}
 
-	var id int
+	var id int64
 	err = s.db.QueryRowContext(ctx, strSql, args).Scan(&id)
 	if err != nil {
 		return 0, err

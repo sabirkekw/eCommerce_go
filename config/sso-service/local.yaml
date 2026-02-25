@@ -1,0 +1,13 @@
+env: local
+storage:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  dbname: postgres
+grpc:
+  auth_port: 50051
+  validator_port: 50052
+  timeout: 1h
+jwt_secret: "timurlox"
+token_ttl: 20m
