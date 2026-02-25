@@ -6,10 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/app"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/cfg"
-	"github.com/sabirkekw/ecommerce_go/order-service/internal/models/order"
-	orderservice "github.com/sabirkekw/ecommerce_go/order-service/internal/services/order"
+	"github.com/sabirkekw/ecommerce_go/order-service/internal/database/postgres"
+	"github.com/sabirkekw/ecommerce_go/order-service/internal/services/order"
 	"github.com/sabirkekw/ecommerce_go/pkg/logger"
 )
 
@@ -21,9 +22,16 @@ func main() {
 	config := cfg.MustLoad()
 	logger.Log.Infow("Config loaded\n", "config", fmt.Sprintf("%+v", config))
 
-	db := make(map[string]*order.OrderData)
+	db, err := postgres.ConnectToPostgres(config)
+	if err != nil {
+		logger.Log.Fatalw("Failed to connect to Postgres", "error", err)
+	}
+	defer db.Close()
+	logger.Log.Infow("Connected to Postgres")
 
-	orderService := orderservice.NewService(db, logger.Log)
+	orderRepo := repository.New(db, logger.Log)
+
+	orderService := orderservice.NewService(orderRepo, logger.Log)
 
 	application := app.New(logger.Log, config.GRPC.Port, db, orderService)
 

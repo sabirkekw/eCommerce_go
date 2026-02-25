@@ -30,6 +30,9 @@ func Register(grpc *grpc.Server, server *ValidatorServer) {
 }
 
 func (s *ValidatorServer) Validate(ctx context.Context, in *proto.ValidatorRequest) (*proto.ValidatorResponse, error) {
+	const op = "sso.Validator.Server.Validate"
+
+	s.logger.Infow("Recieved Validate request", "op", op)
 	isValid, err := s.validator.Validate(ctx, in.Token)
 	if err != nil {
 		return nil, err

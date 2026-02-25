@@ -8,13 +8,13 @@ import (
 
 type Config struct {
 	Env string `yaml:"env" env-required:"true"`
-	// Storage struct {
-	// 	Host     string `yaml:"host"`
-	// 	Port     int    `yaml:"port"`
-	// 	Username string `yaml:"username"`
-	// 	Password string `yaml:"password"`
-	// 	Database string `yaml:"database"`
-	// } `yaml:"storage"`
+	Storage struct {
+		Host     string `yaml:"host"`
+		Port     int    `yaml:"port"`
+		Username string `yaml:"username"`
+		Password string `yaml:"password"`
+		Database string `yaml:"database"`
+	} `yaml:"storage"`
 	GRPC struct {
 		Port    int           `yaml:"port"`
 		Timeout time.Duration `yaml:"timeout"`

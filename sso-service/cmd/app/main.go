@@ -31,10 +31,10 @@ func main() {
 	defer db.Close()
 	logger.Log.Infow("Connected to Postgres")
 
-	authRepo := repository.New(db, squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar))
+	authRepo := repository.New(logger.Log, db, squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar))
 
-	authService := authservice.New(authRepo, cfg.TokenTTL, cfg.JWTSecret)
-	validatorService := validatorservice.New(cfg.JWTSecret)
+	authService := authservice.New(logger.Log, authRepo, cfg.TokenTTL, cfg.JWTSecret)
+	validatorService := validatorservice.New(logger.Log, cfg.JWTSecret)
 
 	application := app.New(logger.Log, cfg.GRPC.AuthPort, cfg.GRPC.ValidatorPort, db, authService, validatorService)
 	go application.AuthGRPCServer.Run()

@@ -3,21 +3,26 @@ package orderservice
 import (
 	"context"
 	"errors"
-	"sync"
 
-	uuid "github.com/google/uuid"
 	order "github.com/sabirkekw/ecommerce_go/order-service/internal/models/order"
 	"go.uber.org/zap"
 )
 
-type Service struct {
-	storage map[string]*order.OrderData
-	logger  *zap.SugaredLogger
-	mx      sync.Mutex
+type Repository interface {
+	CreateOrder(ctx context.Context, order *order.OrderData) (string, error)
+	GetOrder(ctx context.Context, id string) (*order.OrderData, error)
+	UpdateOrder(ctx context.Context, order *order.OrderData) (*order.OrderData, error)
+	DeleteOrder(ctx context.Context, id string) (bool, error)
+	ListOrders(ctx context.Context) ([]*order.OrderData, error)
 }
 
-func NewService(storage map[string]*order.OrderData, logger *zap.SugaredLogger) *Service {
-	return &Service{storage: storage, logger: logger, mx: sync.Mutex{}}
+type Service struct {
+	storage Repository
+	logger  *zap.SugaredLogger
+}
+
+func NewService(storage Repository, logger *zap.SugaredLogger) *Service {
+	return &Service{storage: storage, logger: logger}
 }
 
 func (s *Service) CreateOrder(ctx context.Context, order *order.OrderData) (string, error) {
@@ -29,12 +34,11 @@ func (s *Service) CreateOrder(ctx context.Context, order *order.OrderData) (stri
 		return "", errors.New("invalid order data")
 	}
 
-	id := uuid.New().String()
-	order.ID = id
-
-	s.mx.Lock()
-	s.storage[id] = order
-	s.mx.Unlock()
+	id, err := s.storage.CreateOrder(ctx, order)
+	if err != nil {
+		s.logger.Infow("Failed to create order", "error", err, "op", op)
+		return "", err
+	}
 
 	s.logger.Infow("Order created", "id", id, "item", order.Item, "quantity", order.Quantity, "op", op)
 	return id, nil
@@ -49,12 +53,10 @@ func (s *Service) GetOrder(ctx context.Context, id string) (*order.OrderData, er
 		return nil, errors.New("invalid order ID")
 	}
 
-	s.mx.Lock()
-	orderData, exists := s.storage[id]
-	s.mx.Unlock()
-
-	if !exists {
-		return nil, errors.New("order not found")
+	orderData, err := s.storage.GetOrder(ctx, id)
+	if err != nil {
+		s.logger.Infow("Failed to get order", "id", id, "error", err, "op", op)
+		return nil, err
 	}
 
 	s.logger.Infow("Order found", "id", id, "item", orderData.Item, "quantity", orderData.Quantity, "op", op)
@@ -70,18 +72,14 @@ func (s *Service) UpdateOrder(ctx context.Context, order *order.OrderData) (*ord
 		return nil, errors.New("invalid order data")
 	}
 
-	s.mx.Lock()
-
-	if _, exists := s.storage[order.ID]; !exists {
-		return nil, errors.New("order not found")
+	updatedOrder, err := s.storage.UpdateOrder(ctx, order)
+	if err != nil {
+		s.logger.Infow("Failed to update order", "id", order.ID, "error", err, "op", op)
+		return nil, err
 	}
 
-	s.storage[order.ID] = order
-
-	s.mx.Unlock()
-
-	s.logger.Infow("Order updated", "id", order.ID, "item", order.Item, "quantity", order.Quantity, "op", op)
-	return order, nil
+	s.logger.Infow("Order updated", "id", updatedOrder.ID, "item", updatedOrder.Item, "quantity", updatedOrder.Quantity, "op", op)
+	return updatedOrder, nil
 }
 
 func (s *Service) DeleteOrder(ctx context.Context, id string) (bool, error) {
@@ -93,29 +91,25 @@ func (s *Service) DeleteOrder(ctx context.Context, id string) (bool, error) {
 		return false, errors.New("invalid order ID")
 	}
 
-	s.mx.Lock()
-	if _, exists := s.storage[id]; !exists {
-		return false, errors.New("order not found")
+	success, err := s.storage.DeleteOrder(ctx, id)
+	if err != nil {
+		s.logger.Infow("Failed to delete order", "id", id, "error", err, "op", op)
+		return false, err
 	}
-	delete(s.storage, id)
-	s.mx.Unlock()
 
 	s.logger.Infow("Order deleted", "id", id, "op", op)
-	return true, nil
+	return success, nil
 }
 
 func (s *Service) ListOrders(ctx context.Context) ([]*order.OrderData, error) {
 	const op = "Service.ListOrders"
 	s.logger.Infow("Listing orders", "op", op)
 
-	s.mx.Lock()
-
-	var orders []*order.OrderData
-	for _, orderData := range s.storage {
-		orders = append(orders, orderData)
+	orders, err := s.storage.ListOrders(ctx)
+	if err != nil {
+		s.logger.Infow("Failed to list orders", "error", err, "op", op)
+		return nil, err
 	}
-
-	s.mx.Unlock()
 
 	s.logger.Infow("Orders listed", "op", op)
 	return orders, nil
