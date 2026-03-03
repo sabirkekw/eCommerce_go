@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	_ "github.com/lib/pq"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/cfg"
 )
 

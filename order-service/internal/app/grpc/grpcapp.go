@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	grpcserver "github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/order"
+	grpcclient "github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/client"
+	grpcserver "github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -17,8 +18,9 @@ type GRPCApp struct {
 
 func NewGRPCServer(log *zap.SugaredLogger, port int, service grpcserver.OrderService) *GRPCApp {
 	grpcServer := grpc.NewServer()
+	grpcClient := grpcclient.NewGRPCClient(50052, log) // todo: configure sso client port, now hardcoded
 
-	grpcserver.Register(grpcServer, grpcserver.New(service, log))
+	grpcserver.Register(grpcServer, grpcserver.New(grpcClient, service, log))
 
 	return &GRPCApp{
 		Logger: log,

@@ -6,11 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
-	
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/app"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/cfg"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/database/postgres"
-	"github.com/sabirkekw/ecommerce_go/order-service/internal/services/order"
+	"github.com/sabirkekw/ecommerce_go/order-service/internal/repository"
+	orderservice "github.com/sabirkekw/ecommerce_go/order-service/internal/services/order"
 	"github.com/sabirkekw/ecommerce_go/pkg/logger"
 )
 

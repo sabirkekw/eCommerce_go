@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ func (s *ValidatorService) Validate(ctx context.Context, token string) (bool, er
 	if token == "" {
 		return false, ErrInvalidToken
 	}
-
+	token, _ = strings.CutPrefix(token, "Bearer ")
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			s.logger.Infow("Unexpected signing method", "method", token.Header["alg"], "op", op)
