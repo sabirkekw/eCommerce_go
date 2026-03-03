@@ -12,7 +12,6 @@ import (
 	"github.com/sabirkekw/ecommerce_go/sso-service/internal/config"
 	"github.com/sabirkekw/ecommerce_go/sso-service/internal/repository"
 	authservice "github.com/sabirkekw/ecommerce_go/sso-service/internal/service/auth"
-	validatorservice "github.com/sabirkekw/ecommerce_go/sso-service/internal/service/validator"
 )
 
 func main() {
@@ -34,19 +33,16 @@ func main() {
 	authRepo := repository.New(logger.Log, db, squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar))
 
 	authService := authservice.New(logger.Log, authRepo, cfg.TokenTTL, cfg.JWTSecret)
-	validatorService := validatorservice.New(logger.Log, cfg.JWTSecret)
 
-	application := app.New(logger.Log, cfg.GRPC.AuthPort, cfg.GRPC.ValidatorPort, db, authService, validatorService)
+	application := app.New(logger.Log, cfg.GRPC.Port, db, authService)
 	go application.AuthGRPCServer.Run()
-	go application.ValidatorGRPCServer.Run()
-	logger.Log.Infow("gRPC servers started", "auth_port", cfg.GRPC.AuthPort, "validator_port", cfg.GRPC.ValidatorPort)
+	logger.Log.Infow("gRPC servers started", "auth_port", cfg.GRPC.Port)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
 	application.AuthGRPCServer.Stop()
-	application.ValidatorGRPCServer.Stop()
 
 	logger.Log.Infow("Server received shutdown signal, exiting")
 }

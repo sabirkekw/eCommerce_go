@@ -22,19 +22,7 @@ message LoginResponse {
     string token = 1;
 }
 
-message ValidatorRequest {
-    string token = 1;
-}
-
-message ValidatorResponse {
-    bool is_valid = 1;
-}
-
 service Auth {
     rpc register (RegisterRequest) returns (RegisterResponse);
     rpc login (LoginRequest) returns (LoginResponse);
-}
-
-service Validator {
-    rpc validate (ValidatorRequest) returns (ValidatorResponse);
 }

@@ -229,94 +229,6 @@ func (x *LoginResponse) GetToken() string {
 	return ""
 }
 
-type ValidatorRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidatorRequest) Reset() {
-	*x = ValidatorRequest{}
-	mi := &file_sso_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidatorRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidatorRequest) ProtoMessage() {}
-
-func (x *ValidatorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidatorRequest.ProtoReflect.Descriptor instead.
-func (*ValidatorRequest) Descriptor() ([]byte, []int) {
-	return file_sso_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ValidatorRequest) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-type ValidatorResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	IsValid       bool                   `protobuf:"varint,1,opt,name=is_valid,json=isValid,proto3" json:"is_valid,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ValidatorResponse) Reset() {
-	*x = ValidatorResponse{}
-	mi := &file_sso_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ValidatorResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ValidatorResponse) ProtoMessage() {}
-
-func (x *ValidatorResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_sso_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ValidatorResponse.ProtoReflect.Descriptor instead.
-func (*ValidatorResponse) Descriptor() ([]byte, []int) {
-	return file_sso_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *ValidatorResponse) GetIsValid() bool {
-	if x != nil {
-		return x.IsValid
-	}
-	return false
-}
-
 var File_sso_proto protoreflect.FileDescriptor
 
 const file_sso_proto_rawDesc = "" +
@@ -334,16 +246,10 @@ const file_sso_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"%\n" +
 	"\rLoginResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"(\n" +
-	"\x10ValidatorRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\".\n" +
-	"\x11ValidatorResponse\x12\x19\n" +
-	"\bis_valid\x18\x01 \x01(\bR\aisValid2_\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2_\n" +
 	"\x04Auth\x12/\n" +
 	"\bregister\x12\x10.RegisterRequest\x1a\x11.RegisterResponse\x12&\n" +
-	"\x05login\x12\r.LoginRequest\x1a\x0e.LoginResponse2>\n" +
-	"\tValidator\x121\n" +
-	"\bvalidate\x12\x11.ValidatorRequest\x1a\x12.ValidatorResponseB3Z1github.com/sabirkekw/ecommerce_go/pkg/api/sso;ssob\x06proto3"
+	"\x05login\x12\r.LoginRequest\x1a\x0e.LoginResponseB3Z1github.com/sabirkekw/ecommerce_go/pkg/api/sso;ssob\x06proto3"
 
 var (
 	file_sso_proto_rawDescOnce sync.Once
@@ -357,24 +263,20 @@ func file_sso_proto_rawDescGZIP() []byte {
 	return file_sso_proto_rawDescData
 }
 
-var file_sso_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_sso_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_sso_proto_goTypes = []any{
-	(*RegisterRequest)(nil),   // 0: RegisterRequest
-	(*RegisterResponse)(nil),  // 1: RegisterResponse
-	(*LoginRequest)(nil),      // 2: LoginRequest
-	(*LoginResponse)(nil),     // 3: LoginResponse
-	(*ValidatorRequest)(nil),  // 4: ValidatorRequest
-	(*ValidatorResponse)(nil), // 5: ValidatorResponse
+	(*RegisterRequest)(nil),  // 0: RegisterRequest
+	(*RegisterResponse)(nil), // 1: RegisterResponse
+	(*LoginRequest)(nil),     // 2: LoginRequest
+	(*LoginResponse)(nil),    // 3: LoginResponse
 }
 var file_sso_proto_depIdxs = []int32{
 	0, // 0: Auth.register:input_type -> RegisterRequest
 	2, // 1: Auth.login:input_type -> LoginRequest
-	4, // 2: Validator.validate:input_type -> ValidatorRequest
-	1, // 3: Auth.register:output_type -> RegisterResponse
-	3, // 4: Auth.login:output_type -> LoginResponse
-	5, // 5: Validator.validate:output_type -> ValidatorResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	1, // 2: Auth.register:output_type -> RegisterResponse
+	3, // 3: Auth.login:output_type -> LoginResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -391,9 +293,9 @@ func file_sso_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_sso_proto_rawDesc), len(file_sso_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   4,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   1,
 		},
 		GoTypes:           file_sso_proto_goTypes,
 		DependencyIndexes: file_sso_proto_depIdxs,

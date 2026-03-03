@@ -6,8 +6,7 @@ storage:
   password: postgres
   dbname: postgres
 grpc:
-  auth_port: 50051
-  validator_port: 50052
+  port: 50051
   timeout: 1h
 jwt_secret: "timurlox"
 token_ttl: 20m

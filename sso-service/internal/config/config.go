@@ -16,9 +16,8 @@ type Config struct {
 		Database string `yaml:"database"`
 	} `yaml:"storage"`
 	GRPC struct {
-		AuthPort      int           `yaml:"auth_port"`
-		ValidatorPort int           `yaml:"validator_port"`
-		Timeout       time.Duration `yaml:"timeout"`
+		Port    int           `yaml:"port"`
+		Timeout time.Duration `yaml:"timeout"`
 	} `yaml:"grpc"`
 	JWTSecret string        `yaml:"jwt_secret"`
 	TokenTTL  time.Duration `yaml:"token_ttl"`

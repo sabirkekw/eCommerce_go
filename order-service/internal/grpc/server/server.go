@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -25,15 +24,13 @@ type OrderService interface {
 }
 
 type Server struct {
-	Client  OrderClient
 	Service OrderService
 	Logger  *zap.SugaredLogger
 	proto.UnimplementedOrderServiceServer
 }
 
-func New(client OrderClient, service OrderService, logger *zap.SugaredLogger) *Server {
+func New(service OrderService, logger *zap.SugaredLogger) *Server {
 	return &Server{
-		Client:  client,
 		Service: service,
 		Logger:  logger,
 	}
@@ -47,20 +44,20 @@ func (s *Server) CreateOrder(ctx context.Context, req *proto.CreateOrderRequest)
 	const op = "Server.CreateOrder"
 	s.Logger.Infow("Received CreateOrder request", "item", req.GetItem(), "quantity", req.GetQuantity(), "op", op)
 
-	md, ok := metadata.FromIncomingContext(ctx)
+	// md, ok := metadata.FromIncomingContext(ctx)
 
-	if !ok {
-		s.Logger.Infow("Failed to read metadata", "op", op)
-		return nil, status.Errorf(codes.DataLoss, "failed to read metadata")
-	}
-	if token, ok := md["authorization"]; ok {
-		isValid, err := s.Client.SendTokenToValidate(ctx, token)
-		if err != nil || !isValid {
-			return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-		}
-	} else {
-		return nil, status.Errorf(codes.Unauthenticated, "no token")
-	}
+	// if !ok {
+	// 	s.Logger.Infow("Failed to read metadata", "op", op)
+	// 	return nil, status.Errorf(codes.DataLoss, "failed to read metadata")
+	// }
+	// if token, ok := md["authorization"]; ok {
+	// 	isValid, err := s.Client.SendTokenToValidate(ctx, token)
+	// 	if err != nil || !isValid {
+	// 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+	// 	}
+	// } else {
+	// 	return nil, status.Errorf(codes.Unauthenticated, "no token")
+	// }
 
 	order := &order.OrderData{
 		Item:     req.GetItem(),
