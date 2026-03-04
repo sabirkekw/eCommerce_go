@@ -1,9 +1,11 @@
 package grpcapp
 
 import (
+	"context"
 	"fmt"
 	"net"
 
+	"github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/interceptor"
 	grpcserver "github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/server"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -16,7 +18,12 @@ type GRPCApp struct {
 }
 
 func NewGRPCServer(log *zap.SugaredLogger, port int, service grpcserver.OrderService) *GRPCApp {
-	grpcServer := grpc.NewServer()
+	wrappedInterceptor := func(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		ctx = context.WithValue(context.Background(), "logger", log)
+		return interceptor.AuthInterceptor(ctx, req, serverInfo, handler)
+	}
+
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(wrappedInterceptor))
 
 	grpcserver.Register(grpcServer, grpcserver.New(service, log))
 

@@ -13,3 +13,14 @@ sso-proto:
 	       proto/sso-service/sso.proto
 
 proto: order-proto sso-proto
+
+migrate-up:
+	goose postgres "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable" -dir migrations up
+
+migrate-down:
+	goose postgres "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable" -dir migrations down
+
+run:
+	go run sso-service/cmd/app/main.go &
+	go run order-service/cmd/app/main.go &
+	wait

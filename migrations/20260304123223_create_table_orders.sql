@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS orders
+DROP TABLE IF EXISTS orders;
