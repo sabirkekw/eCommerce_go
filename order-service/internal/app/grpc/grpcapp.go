@@ -12,14 +12,16 @@ import (
 )
 
 type GRPCApp struct {
-	Logger *zap.SugaredLogger
-	Server *grpc.Server
-	port   int
+	Logger    *zap.SugaredLogger
+	Server    *grpc.Server
+	port      int
+	JWTSecret string
 }
 
-func NewGRPCServer(log *zap.SugaredLogger, port int, service grpcserver.OrderService) *GRPCApp {
+func NewGRPCServer(log *zap.SugaredLogger, port int, service grpcserver.OrderService, jwtSecret string) *GRPCApp {
 	wrappedInterceptor := func(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		ctx = context.WithValue(context.Background(), "logger", log)
+		ctx = context.WithValue(ctx, "logger", log)
+		ctx = context.WithValue(ctx, "jwtSecret", jwtSecret)
 		return interceptor.AuthInterceptor(ctx, req, serverInfo, handler)
 	}
 
@@ -28,9 +30,10 @@ func NewGRPCServer(log *zap.SugaredLogger, port int, service grpcserver.OrderSer
 	grpcserver.Register(grpcServer, grpcserver.New(service, log))
 
 	return &GRPCApp{
-		Logger: log,
-		Server: grpcServer,
-		port:   port,
+		Logger:    log,
+		Server:    grpcServer,
+		port:      port,
+		JWTSecret: jwtSecret,
 	}
 }
 

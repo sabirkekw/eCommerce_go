@@ -33,7 +33,7 @@ func main() {
 
 	orderService := orderservice.NewService(orderRepo, logger.Log)
 
-	application := app.New(logger.Log, config.GRPC.Port, db, orderService)
+	application := app.New(logger.Log, config.GRPC.Port, db, orderService, config.JWTSecret)
 
 	go application.GRPCServer.Run()
 

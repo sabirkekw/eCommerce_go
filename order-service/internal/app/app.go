@@ -13,8 +13,8 @@ type App struct {
 	Storage    *sql.DB
 }
 
-func New(log *zap.SugaredLogger, port int, storage *sql.DB, service grpcserver.OrderService) *App {
-	GRPCServer := grpcapp.NewGRPCServer(log, port, service)
+func New(log *zap.SugaredLogger, port int, storage *sql.DB, service grpcserver.OrderService, jwtSecret string) *App {
+	GRPCServer := grpcapp.NewGRPCServer(log, port, service, jwtSecret)
 
 	return &App{
 		GRPCServer: GRPCServer,

@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Env string `yaml:"env" env-required:"true"`
+	Env     string `yaml:"env" env-required:"true"`
 	Storage struct {
 		Host     string `yaml:"host"`
 		Port     int    `yaml:"port"`
@@ -19,6 +19,7 @@ type Config struct {
 		Port    int           `yaml:"port"`
 		Timeout time.Duration `yaml:"timeout"`
 	} `yaml:"grpc"`
+	JWTSecret string `yaml:"jwt_secret"`
 }
 
 // done: implement config loading and validation

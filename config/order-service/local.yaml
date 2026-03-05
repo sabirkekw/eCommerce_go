@@ -8,4 +8,4 @@ storage:
 grpc:
   port: 50053
   timeout: 1h
-
+jwt_secret: "timurlox"
