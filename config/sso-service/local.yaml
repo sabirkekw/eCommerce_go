@@ -8,5 +8,8 @@ storage:
 grpc:
   port: 50051
   timeout: 1h
+http:
+  port: 8081
+  timeout: 1h
 jwt_secret: "timurlox"
 token_ttl: 20m

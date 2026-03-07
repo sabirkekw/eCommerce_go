@@ -34,9 +34,11 @@ func main() {
 
 	authService := authservice.New(logger.Log, authRepo, cfg.TokenTTL, cfg.JWTSecret)
 
-	application := app.New(logger.Log, cfg.GRPC.Port, db, authService)
+	application := app.New(logger.Log, cfg.GRPC.Port, cfg.HTTP.Port, db, authService)
 	go application.AuthGRPCServer.Run()
-	logger.Log.Infow("gRPC servers started", "auth_port", cfg.GRPC.Port)
+	logger.Log.Infow("gRPC server started", "auth_port", cfg.GRPC.Port)
+	go application.AuthHTTPServer.Run()
+	logger.Log.Infow("HTTP gateway started", "auth_port", cfg.HTTP.Port)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)

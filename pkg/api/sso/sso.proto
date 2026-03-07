@@ -2,6 +2,8 @@ syntax = "proto3";
 
 option go_package = "github.com/sabirkekw/ecommerce_go/pkg/api/sso;sso";
 
+import "pkg/google/api/annotations.proto";
+
 message RegisterRequest {
     string first_name = 1;
     string last_name = 2;
@@ -23,6 +25,16 @@ message LoginResponse {
 }
 
 service Auth {
-    rpc register (RegisterRequest) returns (RegisterResponse);
-    rpc login (LoginRequest) returns (LoginResponse);
+    rpc register (RegisterRequest) returns (RegisterResponse) {
+        option (google.api.http) = {
+            post: "/v1/auth/register"
+            body: "*"
+        };
+    };
+    rpc login (LoginRequest) returns (LoginResponse) {
+        option (google.api.http) = {
+            post: "/v1/auth/login"
+            body: "*"
+        };
+    };
 }

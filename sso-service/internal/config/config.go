@@ -19,6 +19,10 @@ type Config struct {
 		Port    int           `yaml:"port"`
 		Timeout time.Duration `yaml:"timeout"`
 	} `yaml:"grpc"`
+	HTTP struct {
+		Port    int           `yaml:"port"`
+		Timeout time.Duration `yaml:"timeout"`
+	} `yaml:"http"`
 	JWTSecret string        `yaml:"jwt_secret"`
 	TokenTTL  time.Duration `yaml:"token_ttl"`
 }

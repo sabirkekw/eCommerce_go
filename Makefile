@@ -7,10 +7,14 @@ order-proto:
 	       proto/order-service/order.proto
 
 sso-proto:
-	protoc --proto_path=proto/sso-service/ \
-	       --go_out=pkg/api/sso --go_opt=paths=source_relative \
-	       --go-grpc_out=pkg/api/sso --go-grpc_opt=paths=source_relative \
-	       proto/sso-service/sso.proto
+	protoc -I . \
+		--go_out . --go_opt paths=source_relative \
+		--go-grpc_out . --go-grpc_opt paths=source_relative \
+		pkg/api/sso/sso.proto
+
+	protoc -I . --grpc-gateway_out . \
+		--grpc-gateway_opt paths=source_relative \
+		pkg/api/sso/sso.proto
 
 proto: order-proto sso-proto
 

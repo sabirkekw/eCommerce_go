@@ -35,7 +35,7 @@ func Register(grpc *grpc.Server, server *AuthServer) {
 func (s *AuthServer) Register(ctx context.Context, in *proto.RegisterRequest) (*proto.RegisterResponse, error) {
 	const op = "sso.Auth.Server.Register"
 
-	s.logger.Infow("Recieved Register request", "data", in, "op", op)
+	s.logger.Debugw("Recieved Register request", "data", in, "op", op)
 
 	if in.FirstName == "" || in.LastName == "" || in.Email == "" || in.Password == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "all fields are required")
@@ -53,12 +53,12 @@ func (s *AuthServer) Register(ctx context.Context, in *proto.RegisterRequest) (*
 
 func (s *AuthServer) Login(ctx context.Context, in *proto.LoginRequest) (*proto.LoginResponse, error) {
 	const op = "sso.Auth.Server.Login"
+	s.logger.Debugw("Recieved Login request", "op", op)
 
 	if in.Email == "" || in.Password == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "email and password are required")
 	}
 
-	s.logger.Infow("Recieved Login request", "op", op)
 	token, err := s.auth.Login(ctx, in.Email, in.Password)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid credentials")

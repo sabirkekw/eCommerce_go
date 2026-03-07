@@ -25,7 +25,7 @@ func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerI
 	if !ok {
 		panic("failed to recieve logger from context")
 	}
-	logger.Infow("Recieved request: ", "method", serverInfo.FullMethod, "request", req)
+	logger.Debugw("Recieved request: ", "method", serverInfo.FullMethod, "request", req)
 
 	// validating JWT token
 	md, ok := metadata.FromIncomingContext(ctx)
@@ -43,7 +43,7 @@ func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerI
 	if !isValid {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
-	logger.Infow("Token valid", "method", serverInfo.FullMethod)
+	logger.Debugw("Token valid", "method", serverInfo.FullMethod)
 
 	// handling RPC
 	resp, err := handler(ctx, req)
@@ -52,7 +52,7 @@ func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerI
 		return resp, err
 	}
 
-	logger.Infow("RPC executed: ", "method", serverInfo.FullMethod)
+	logger.Debugw("RPC executed: ", "method", serverInfo.FullMethod)
 	return resp, nil
 }
 

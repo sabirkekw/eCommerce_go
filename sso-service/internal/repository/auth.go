@@ -28,7 +28,7 @@ func New(logger *zap.SugaredLogger, db *sql.DB, builder sq.StatementBuilderType)
 
 func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastName string, email string, hash []byte) (int64, error) {
 	const op = "sso.Auth.Repository.CreateUser"
-	s.logger.Infow("Creating new user", "email", email, "op", op)
+	s.logger.Debugw("Creating new user", "email", email, "op", op)
 
 	query := s.builder.Insert("users").
 		Columns("firstname", "lastname", "email", "hash").
@@ -37,14 +37,14 @@ func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastN
 
 	strSql, args, err := query.ToSql()
 	if err != nil {
-		s.logger.Infow("Failed to build SQL query", "error", err, "op", op)
+		s.logger.Debugw("Failed to build SQL query", "error", err, "op", op)
 		return 0, err
 	}
 
 	var id int64
 	err = s.db.QueryRowContext(ctx, strSql, args...).Scan(&id)
 	if err != nil {
-		s.logger.Infow("Failed to execute SQL query", "error", err, "op", op)
+		s.logger.Debugw("Failed to execute SQL query", "error", err, "op", op)
 		return 0, err
 	}
 	return id, nil
@@ -52,7 +52,7 @@ func (s *UserRepository) CreateUser(ctx context.Context, firstName string, lastN
 
 func (s *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	const op = "sso.Auth.Repository.GetByEmail"
-	s.logger.Infow("Getting user by email", "email", email, "op", op)
+	s.logger.Debugw("Getting user by email", "email", email, "op", op)
 
 	query := s.builder.Select("*").
 		From("users").
@@ -60,7 +60,7 @@ func (s *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 	strSql, args, err := query.ToSql()
 	if err != nil {
-		s.logger.Infow("Failed to build SQL query", "error", err)
+		s.logger.Debugw("Failed to build SQL query", "error", err)
 		return nil, err
 	}
 
@@ -68,7 +68,7 @@ func (s *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	row := s.db.QueryRowContext(ctx, strSql, args...)
 	if err := row.Scan(&user.ID, &user.FirstName, &user.LastName, &user.Email, &user.PassHash); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			s.logger.Infow("User not found", "email", email, "op", "sso.Auth.Repository.GetByEmail")
+			s.logger.Debugw("User not found", "email", email, "op", "sso.Auth.Repository.GetByEmail")
 			return nil, ErrNoUser
 		}
 		return nil, err
