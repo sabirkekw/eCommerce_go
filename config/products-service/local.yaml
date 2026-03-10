@@ -1,0 +1,14 @@
+env: local
+storage:
+  host: localhost
+  port: 5432
+  username: postgres
+  password: postgres
+  database: postgres
+grpc:
+  port: 50052
+  timeout: 1h
+http:
+  port: 8080
+  timeout: 1h
+jwt_secret: "timurlox"

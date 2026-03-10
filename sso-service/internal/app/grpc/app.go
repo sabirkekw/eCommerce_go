@@ -16,6 +16,7 @@ type AuthGRPCApp struct {
 }
 
 func NewGRPCServer(log *zap.SugaredLogger, port int, service authgrpc.AuthService) *AuthGRPCApp {
+	
 	grpcServer := grpc.NewServer()
 
 	authgrpc.Register(grpcServer, authgrpc.New(service, log))

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+option go_package = "github.com/sabirkekw/ecommerce_go/pkg/api/products;products";
+
+import "pkg/google/api/annotations.proto";
+
+service ProductsService {
+    // user
+    rpc GetProductByID (GetProductRequest) returns (GetProductResponse) {
+        option (google.api.http) = {
+            get: "/v1/products/{id}"
+        };
+    }
+    rpc ListProducts (ListProductsRequest) returns (ListProductsResponse) {
+        option (google.api.http) = {
+            get: "/v1/products"
+        };
+    }
+    // 
+    rpc UpdateProduct (UpdateProductRequest) returns (UpdateProductResponse) {
+        option (google.api.http) = {
+            put: "/v1/products/{id}"
+            body: "*"
+        };
+    }
+}
+
+message GetProductRequest {
+    string id = 1;
+}
+
+message GetProductResponse {
+    Product product = 1;
+}
+
+message ListProductsRequest {}
+
+message ListProductsResponse {
+    repeated Product products = 1;
+}
+
+message UpdateProductRequest {
+    string id = 1;
+    Product product = 2;
+}
+
+message UpdateProductResponse {
+    Product updatedProduct = 1;
+}
+
+message Product {
+    string id = 1;
+    string name = 2;
+    int32 quantity = 3;
+} 
