@@ -2,6 +2,7 @@ package order
 
 type OrderData struct {
 	ID       string
-	Item     string
+	ItemID   string
 	Quantity int32
+	UserID   string
 }

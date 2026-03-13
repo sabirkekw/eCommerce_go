@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	proto "github.com/sabirkekw/ecommerce_go/pkg/api/sso"
+	"github.com/sabirkekw/ecommerce_go/pkg/apierrors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,11 +44,10 @@ func (s *AuthServer) Register(ctx context.Context, in *proto.RegisterRequest) (*
 	}
 
 	uid, err := s.auth.Register(ctx, in.FirstName, in.LastName, in.Email, in.Password)
-	if err != nil {
-		if err.Error() == "user already exists" {
-			return nil, status.Errorf(codes.AlreadyExists, "user with email %s already exists", in.Email)
-		}
-		return nil, status.Errorf(codes.Internal, "failed to register user: %v", err)
+	if errors.Is(err, apierrors.ErrUserAlreadyExists) {
+		return nil, status.Errorf(codes.AlreadyExists, "user with email %s already exists", in.Email)
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to register user")
 	}
 	return &proto.RegisterResponse{Id: uid}, nil
 }
@@ -60,8 +61,10 @@ func (s *AuthServer) Login(ctx context.Context, in *proto.LoginRequest) (*proto.
 	}
 
 	token, err := s.auth.Login(ctx, in.Email, in.Password)
-	if err != nil {
+	if errors.Is(err, apierrors.ErrInvalidCredentials) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid credentials")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to log in")
 	}
 	return &proto.LoginResponse{Token: token}, nil
 }

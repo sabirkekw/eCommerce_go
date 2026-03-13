@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/sabirkekw/ecommerce_go/pkg/apierrors"
 	"github.com/sabirkekw/ecommerce_go/sso-service/internal/models"
-	"github.com/sabirkekw/ecommerce_go/sso-service/internal/repository"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -41,13 +41,13 @@ func (s *AuthService) Register(ctx context.Context, firstName string, lastName s
 	_, err := s.userRepo.GetByEmail(ctx, email)
 	if err == nil {
 		s.logger.Debugw("User already exists", "email", email, "op", op)
-		return 0, errors.New("user already exists")
+		return 0, apierrors.ErrUserAlreadyExists
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		s.logger.Debugw("Failed to make password hash", "password", password, "op", op)
-		return 0, errors.New("failed to hash password")
+		s.logger.Debugw("Failed to make password hash", "error", err, "op", op)
+		return 0, apierrors.ErrUnknown
 	}
 	id, err := s.userRepo.CreateUser(ctx, firstName, lastName, email, hash)
 	if err != nil {
@@ -65,16 +65,17 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 	s.logger.Debugw("Logging in user", "email", email, "op", op)
 	existingUser, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
-		if errors.Is(err, repository.ErrNoUser) {
+		if errors.Is(err, apierrors.ErrNoUser) {
 			s.logger.Debugw("User not found", "email", email, "op", op)
-			return "", errors.New("invalid credentials")
+			return "", apierrors.ErrInvalidCredentials
 		}
+		s.logger.Warnf("failed to log in user", "error", err, "op", op)
 		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword(existingUser.PassHash, []byte(password))
 	if err != nil {
-		return "", errors.New("invalid credentials")
+		return "", apierrors.ErrInvalidCredentials
 	}
 
 	claims := jwt.MapClaims{

@@ -9,6 +9,7 @@ import (
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/app"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/cfg"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/database/postgres"
+	productsclient "github.com/sabirkekw/ecommerce_go/order-service/internal/grpc/products-client"
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/repository"
 	orderservice "github.com/sabirkekw/ecommerce_go/order-service/internal/services/order"
 	"github.com/sabirkekw/ecommerce_go/pkg/logger"
@@ -31,7 +32,9 @@ func main() {
 
 	orderRepo := repository.New(db, logger.Log)
 
-	orderService := orderservice.NewService(orderRepo, logger.Log)
+	productsClient := productsclient.New(logger.Log, 50052)
+
+	orderService := orderservice.NewService(orderRepo, productsClient, logger.Log)
 
 	application := app.New(logger.Log, config.GRPC.Port, db, orderService, config.JWTSecret)
 

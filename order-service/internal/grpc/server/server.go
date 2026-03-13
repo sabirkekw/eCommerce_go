@@ -2,9 +2,12 @@ package grpcserver
 
 import (
 	"context"
+	"errors"
+	"strconv"
 
 	"github.com/sabirkekw/ecommerce_go/order-service/internal/models/order"
 	proto "github.com/sabirkekw/ecommerce_go/pkg/api/order"
+	"github.com/sabirkekw/ecommerce_go/pkg/apierrors"
 	"go.uber.org/zap"
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -44,28 +47,22 @@ func (s *Server) CreateOrder(ctx context.Context, req *proto.CreateOrderRequest)
 	const op = "Server.CreateOrder"
 	s.Logger.Infow("Received CreateOrder request", "item", req.GetItem(), "quantity", req.GetQuantity(), "op", op)
 
-	// md, ok := metadata.FromIncomingContext(ctx)
-
-	// if !ok {
-	// 	s.Logger.Infow("Failed to read metadata", "op", op)
-	// 	return nil, status.Errorf(codes.DataLoss, "failed to read metadata")
-	// }
-	// if token, ok := md["authorization"]; ok {
-	// 	isValid, err := s.Client.SendTokenToValidate(ctx, token)
-	// 	if err != nil || !isValid {
-	// 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-	// 	}
-	// } else {
-	// 	return nil, status.Errorf(codes.Unauthenticated, "no token")
-	// }
-
+	userID, ok := ctx.Value("user_id").(int64)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "Failed to fetch user ID")
+	}
 	order := &order.OrderData{
-		Item:     req.GetItem(),
+		ItemID:   req.GetItem(),
 		Quantity: req.GetQuantity(),
+		UserID:   strconv.Itoa(int(userID)),
 	}
 	id, err := s.Service.CreateOrder(ctx, order)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid order data")
+	if errors.Is(err, apierrors.ErrNotEnoughProduct) {
+		return nil, status.Errorf(codes.FailedPrecondition, "Not enough product")
+	} else if errors.Is(err, apierrors.ErrProductNotFound) {
+		return nil, status.Errorf(codes.InvalidArgument, "Product not found")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to create order")
 	}
 
 	return &proto.CreateOrderResponse{Id: id}, nil
@@ -75,13 +72,17 @@ func (s *Server) GetOrder(ctx context.Context, req *proto.GetOrderRequest) (*pro
 	const op = "Server.GetOrder"
 	s.Logger.Infow("Received GetOrder request", "id", req.GetId(), "op", op)
 	order, err := s.Service.GetOrder(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid order ID")
+	if errors.Is(err, apierrors.ErrIncorrectID) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid ID")
+	} else if errors.Is(err, apierrors.ErrOrderNotFound) {
+		return nil, status.Errorf(codes.NotFound, "order not found")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get order")
 	}
 	return &proto.GetOrderResponse{
 		Order: &proto.Order{
 			Id:       req.GetId(),
-			Item:     order.Item,
+			Item:     order.ItemID,
 			Quantity: order.Quantity,
 		},
 	}, nil
@@ -92,18 +93,22 @@ func (s *Server) UpdateOrder(ctx context.Context, req *proto.UpdateOrderRequest)
 	s.Logger.Infow("Received UpdateOrder request", "id", req.GetId(), "item", req.GetItem(), "quantity", req.GetQuantity(), "op", op)
 	order := &order.OrderData{
 		ID:       req.GetId(),
-		Item:     req.GetItem(),
+		ItemID:   req.GetItem(),
 		Quantity: req.GetQuantity(),
 	}
 
 	updatedOrder, err := s.Service.UpdateOrder(ctx, order)
-	if err != nil {
+	if errors.Is(err, apierrors.ErrInvalidOrderData) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid order data")
+	} else if errors.Is(err, apierrors.ErrOrderNotFound) {
+		return nil, status.Errorf(codes.NotFound, "order not found")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update order")
 	}
 	return &proto.UpdateOrderResponse{
 		Order: &proto.Order{
 			Id:       updatedOrder.ID,
-			Item:     updatedOrder.Item,
+			Item:     updatedOrder.ItemID,
 			Quantity: updatedOrder.Quantity,
 		},
 	}, nil
@@ -113,8 +118,12 @@ func (s *Server) DeleteOrder(ctx context.Context, req *proto.DeleteOrderRequest)
 	const op = "Server.DeleteOrder"
 	s.Logger.Infow("Received DeleteOrder request", "id", req.GetId(), "op", op)
 	success, err := s.Service.DeleteOrder(ctx, req.GetId())
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid order ID")
+	if errors.Is(err, apierrors.ErrIncorrectID) {
+		return nil, status.Errorf(codes.InvalidArgument, "incorrect id")
+	} else if errors.Is(err, apierrors.ErrOrderNotFound) {
+		return nil, status.Errorf(codes.NotFound, "order not found")
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete order")
 	}
 	return &proto.DeleteOrderResponse{Success: success}, nil
 }
@@ -130,7 +139,7 @@ func (s *Server) ListOrders(ctx context.Context, req *proto.ListOrdersRequest) (
 	for _, order := range orders {
 		protoOrders = append(protoOrders, &proto.Order{
 			Id:       order.ID,
-			Item:     order.Item,
+			Item:     order.ItemID,
 			Quantity: order.Quantity,
 		})
 	}

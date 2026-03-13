@@ -45,6 +45,8 @@ func (s *Server) GetProductByID(ctx context.Context, req *proto.GetProductReques
 	product, err := s.Service.GetProductById(ctx, id)
 	if errors.Is(err, apierrors.ErrProductNotFound) {
 		return nil, status.Errorf(codes.NotFound, "product not found")
+	} else if errors.Is(err, apierrors.ErrIncorrectID) {
+		return nil, status.Errorf(codes.FailedPrecondition, "incorrect user ID")
 	} else if err != nil {
 		return nil, status.Errorf(codes.Internal, "internal server error")
 	}
