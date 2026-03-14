@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sabirkekw/ecommerce_go/pkg/apierrors"
@@ -15,21 +16,54 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	// getting logger from context
-	logger, ok := ctx.Value("logger").(*zap.SugaredLogger)
-	if !ok {
-		panic("failed to recieve logger from context")
-	}
-	logger.Debugw("Recieved request: ", "method", serverInfo.FullMethod, "request", req)
+func LogInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	logger := mustLogger(ctx)
+	logger.Infow("Recieved request: ", "method", serverInfo.FullMethod, "request", req)
 
-	// validating JWT token
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
+	resp, err := handler(ctx, req)
+	if err != nil {
+		logger.Infow("RPC failed: ", "method", serverInfo.FullMethod, "request", req)
+		return resp, err
+	}
+
+	logger.Infow("RPC executed: ", "method", serverInfo.FullMethod)
+	return resp, nil
+}
+
+func UserIDExtractorInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	logger := mustLogger(ctx)
+
+	token, err := tokenFromContext(ctx)
+	if err != nil {
+		logger.Debugw("failed to recieve token from context")
+		return nil, status.Errorf(codes.Internal, "internal server error")
+	}
+
+	userID, err := getUserIDFromToken(token, mustJWTSecret(ctx))
+	if err != nil {
+		logger.Debugw("No UserID in token", "method", serverInfo.FullMethod)
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
+	}
+
+	ctx = context.WithValue(ctx, "user_id", userID)
+
+	resp, err := handler(ctx, req)
+	if err != nil {
+		return resp, err
+	}
+
+	return resp, nil
+}
+
+func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	logger := mustLogger(ctx)
+
+	token, err := tokenFromContext(ctx)
+	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "no token")
 	}
-	token := md["authorization"]
-	isValid, err := valid(token, ctx.Value("jwtSecret").(string))
+
+	isValid, err := validateToken(token, mustJWTSecret(ctx))
 	if err != nil {
 		if errors.Is(err, apierrors.ErrTokenExpired) {
 			return nil, status.Errorf(codes.Unauthenticated, "token expired")
@@ -39,36 +73,86 @@ func AuthInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerI
 	if !isValid {
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
 	}
+
 	logger.Debugw("Token valid", "method", serverInfo.FullMethod)
 
-	userID, err := getUserIDFromToken(token, ctx.Value("jwtSecret").(string))
-	if err != nil {
-		logger.Debugw("No UserID in token", "method", serverInfo.FullMethod)
-		return nil, status.Errorf(codes.Unauthenticated, "invalid token")
-	}
-	ctx = context.WithValue(ctx, "user_id", userID)
+	// keep token around for downstream interceptors
+	ctx = context.WithValue(ctx, "token", token)
 
-	// handling RPC
 	resp, err := handler(ctx, req)
 	if err != nil {
-		logger.Warnw("RPC failed: ", "method", serverInfo.FullMethod, "request", req)
 		return resp, err
 	}
 
-	logger.Debugw("RPC executed: ", "method", serverInfo.FullMethod)
 	return resp, nil
 }
 
-func valid(tokenSliced []string, jwtSecret string) (bool, error) {
-	token := strings.Join(tokenSliced, "")
-	token, _ = strings.CutPrefix(token, "Bearer ")
-	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(jwtSecret), nil
-	})
+func TimeoutInterceptor(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	timeout, ok := ctx.Value("timeout").(time.Duration)
+	if !ok {
+		timeout = 5 * time.Second // default timeout
+	}
 
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	done := make(chan struct {
+		resp any
+		err  error
+	}, 1)
+	go func() {
+		resp, err := handler(ctx, req)
+		done <- struct {
+			resp any
+			err  error
+		}{resp, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, status.Errorf(codes.DeadlineExceeded, "timeout limit exceeded")
+	case response := <-done:
+		return response.resp, response.err
+	}
+}
+
+func mustLogger(ctx context.Context) *zap.SugaredLogger {
+	logger, ok := ctx.Value("logger").(*zap.SugaredLogger)
+	if !ok {
+		panic("failed to recieve logger from context")
+	}
+	return logger
+}
+
+func mustJWTSecret(ctx context.Context) string {
+	secret, ok := ctx.Value("jwtSecret").(string)
+	if !ok {
+		panic("failed to recieve jwt secret from context")
+	}
+	return secret
+}
+
+func tokenFromContext(ctx context.Context) ([]string, error) {
+	if token, ok := ctx.Value("token").([]string); ok && len(token) > 0 {
+		return token, nil
+	}
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("missing metadata")
+	}
+
+	token := md["authorization"]
+	if len(token) == 0 {
+		return nil, errors.New("missing authorization header")
+	}
+
+	return token, nil
+}
+
+func validateToken(tokenSliced []string, jwtSecret string) (bool, error) {
+	token := normalizeToken(tokenSliced)
+	parsedToken, err := parseToken(token, jwtSecret)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return false, apierrors.ErrTokenExpired
@@ -83,20 +167,35 @@ func valid(tokenSliced []string, jwtSecret string) (bool, error) {
 }
 
 func getUserIDFromToken(tokenSliced []string, jwtSecret string) (int64, error) {
+	token := normalizeToken(tokenSliced)
+	parsedToken, err := parseToken(token, jwtSecret)
+	if err != nil {
+		return 0, err
+	}
+
+	claims, ok := parsedToken.Claims.(jwt.MapClaims)
+	if !ok {
+		return 0, fmt.Errorf("couldnt find user id in token")
+	}
+
+	userID, ok := claims["user_id"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("couldnt find user id in token")
+	}
+
+	return int64(userID), nil
+}
+
+func normalizeToken(tokenSliced []string) string {
 	token := strings.Join(tokenSliced, "")
-	token, _ = strings.CutPrefix(token, "Bearer ")
-	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+	return strings.TrimPrefix(token, "Bearer ")
+}
+
+func parseToken(token, jwtSecret string) (*jwt.Token, error) {
+	return jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(jwtSecret), nil
 	})
-	if err != nil {
-		return 0, err
-	}
-	userID, ok := parsedToken.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, fmt.Errorf("couldnt find user id in token")
-	}
-	return int64(userID["user_id"].(float64)), nil
 }

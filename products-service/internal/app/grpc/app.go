@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/sabirkekw/ecommerce_go/products-service/internal/grpc/interceptor"
 	productsgrpc "github.com/sabirkekw/ecommerce_go/products-service/internal/grpc/server"
@@ -17,14 +18,18 @@ type GRPCApp struct {
 	Port   int
 }
 
-func New(logger *zap.SugaredLogger, port int, service productsgrpc.ProductsService, jwtSecret string) *GRPCApp {
-	wrappedInterceptor := func(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+func New(logger *zap.SugaredLogger, port int, service productsgrpc.ProductsService, jwtSecret string, timeout time.Duration) *GRPCApp {
+	wrappedTimeoutInterceptor := func(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		ctx = context.WithValue(ctx, "logger", logger)
-		ctx = context.WithValue(ctx, "jwtSecret", jwtSecret)
-		return interceptor.AuthInterceptor(ctx, req, serverInfo, handler)
+		ctx = context.WithValue(ctx, "timeout", timeout)
+		return interceptor.TimeoutInterceptor(ctx, req, serverInfo, handler)
 	}
 
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(wrappedInterceptor))
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		wrappedTimeoutInterceptor,
+		interceptor.LogInterceptor,
+	),
+	)
 
 	productsgrpc.Register(grpcServer, productsgrpc.New(service, logger))
 

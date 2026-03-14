@@ -8,6 +8,8 @@ import (
 	productsProto "github.com/sabirkekw/ecommerce_go/pkg/api/products"
 	"github.com/sabirkekw/ecommerce_go/pkg/apierrors"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Repository interface {
@@ -44,11 +46,10 @@ func (s *Service) CreateOrder(ctx context.Context, order *order.OrderData) (stri
 		s.logger.Debugw("Invalid order data", "item", order.ItemID, "quantity", order.Quantity, "op", op)
 		return "", errors.New("invalid order data")
 	}
-
 	productData, err := s.productsClient.GetProductByID(ctx, order.ItemID)
-	if errors.Is(err, apierrors.ErrProductNotFound) {
-		s.logger.Debugw("product not found", "op", op, "error", err)
-		return "", err
+	if errors.Is(err, status.Errorf(codes.NotFound, "product not found")) {
+		s.logger.Debugw("product not found", "op", op)
+		return "", apierrors.ErrProductNotFound
 	} else if err != nil {
 		s.logger.Debugw("failed to get product", "op", op, "error", err)
 		return "", apierrors.ErrUnknown
@@ -78,7 +79,7 @@ func (s *Service) GetOrder(ctx context.Context, id string) (*order.OrderData, er
 
 	orderData, err := s.storage.GetOrder(ctx, id)
 	if errors.Is(err, apierrors.ErrOrderNotFound) {
-		s.logger.Debugw("order not found", "id", id, "error", err, "op", op)
+		s.logger.Debugw("order not found", "id", "op", op)
 		return nil, err
 	} else if err != nil {
 		s.logger.Debugw("Failed to get order", "id", id, "error", err, "op", op)
@@ -100,7 +101,7 @@ func (s *Service) UpdateOrder(ctx context.Context, order *order.OrderData) (*ord
 
 	updatedOrder, err := s.storage.UpdateOrder(ctx, order)
 	if errors.Is(err, apierrors.ErrOrderNotFound) {
-		s.logger.Debugw("order not found", "error", err, "op", op)
+		s.logger.Debugw("order not found", "op", op)
 		return nil, err
 	} else if err != nil {
 		s.logger.Debugw("Failed to update order", "id", order.ID, "error", err, "op", op)

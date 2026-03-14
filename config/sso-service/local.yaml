@@ -7,7 +7,7 @@ storage:
   dbname: postgres
 grpc:
   port: 50051
-  timeout: 1h
+  timeout: 2s
 http:
   port: 8081
   timeout: 1h

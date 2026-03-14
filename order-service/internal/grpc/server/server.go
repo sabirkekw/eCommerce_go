@@ -46,7 +46,6 @@ func Register(grpc *grpc.Server, server *Server) {
 func (s *Server) CreateOrder(ctx context.Context, req *proto.CreateOrderRequest) (*proto.CreateOrderResponse, error) {
 	const op = "Server.CreateOrder"
 	s.Logger.Infow("Received CreateOrder request", "item", req.GetItem(), "quantity", req.GetQuantity(), "op", op)
-
 	userID, ok := ctx.Value("user_id").(int64)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "Failed to fetch user ID")

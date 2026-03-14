@@ -30,7 +30,7 @@ func New(logger *zap.SugaredLogger, port int) *ProductsClient {
 
 func (c *ProductsClient) GetProductByID(ctx context.Context, id string) (*productsProto.Product, error) {
 	const op = "Order.ProductsClient.GetProductByID"
-	c.Logger.Infow("requesting product data from Products-service", "id", id, "op", op)
+	c.Logger.Debugw("requesting product data from Products-service", "id", id, "op", op)
 
 	req := &productsProto.GetProductRequest{
 		Id: id,

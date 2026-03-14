@@ -34,7 +34,7 @@ func main() {
 
 	authService := authservice.New(logger.Log, authRepo, cfg.TokenTTL, cfg.JWTSecret)
 
-	application := app.New(logger.Log, cfg.GRPC.Port, cfg.HTTP.Port, db, authService)
+	application := app.New(logger.Log, cfg.GRPC.Port, cfg.HTTP.Port, db, authService, cfg.GRPC.Timeout)
 	go application.AuthGRPCServer.Run()
 	logger.Log.Infow("gRPC server started", "auth_port", cfg.GRPC.Port)
 	go application.AuthHTTPServer.Run()

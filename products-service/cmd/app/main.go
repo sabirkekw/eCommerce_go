@@ -31,7 +31,7 @@ func main() {
 
 	productsService := service.New(productsRepository, logger.Log)
 
-	application := app.New(logger.Log, cfg.HTTP.Port, cfg.GRPC.Port, productsService, cfg.JWTSecret)
+	application := app.New(logger.Log, cfg.HTTP.Port, cfg.GRPC.Port, productsService, cfg.JWTSecret, cfg.GRPC.Timeout)
 
 	go application.GRPCApp.Run()
 	logger.Log.Infow("Products gRPC server started", "port", cfg.GRPC.Port)

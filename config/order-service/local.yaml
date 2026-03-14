@@ -7,5 +7,5 @@ storage:
   database: postgres
 grpc:
   port: 50053
-  timeout: 1h
+  timeout: 2s
 jwt_secret: "timurlox"

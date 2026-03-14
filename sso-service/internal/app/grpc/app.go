@@ -1,10 +1,13 @@
 package authgrpcapp
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"time"
 
 	authgrpc "github.com/sabirkekw/ecommerce_go/sso-service/internal/grpc/auth"
+	"github.com/sabirkekw/ecommerce_go/sso-service/internal/grpc/interceptor"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -15,9 +18,16 @@ type AuthGRPCApp struct {
 	port   int
 }
 
-func NewGRPCServer(log *zap.SugaredLogger, port int, service authgrpc.AuthService) *AuthGRPCApp {
-	
-	grpcServer := grpc.NewServer()
+func NewGRPCServer(log *zap.SugaredLogger, port int, service authgrpc.AuthService, timeout time.Duration) *AuthGRPCApp {
+	wrappedTimeoutInterceptor := func(ctx context.Context, req any, serverInfo *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		ctx = context.WithValue(ctx, "logger", log)
+		ctx = context.WithValue(ctx, "timeout", timeout)
+		return interceptor.TimeoutInterceptor(ctx, req, serverInfo, handler)
+	}
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		wrappedTimeoutInterceptor,
+		interceptor.LogInterceptor,
+	))
 
 	authgrpc.Register(grpcServer, authgrpc.New(service, log))
 	return &AuthGRPCApp{
