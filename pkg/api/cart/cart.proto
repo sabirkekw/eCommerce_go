@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+option go_package = "github.com/sabirkekw/ecommerce_go/pkg/api/cart;cart";
+
+import "pkg/google/api/annotations.proto";
+
+service CartService {
+    rpc AddToCart(AddToCartRequest) returns (AddToCartResponse) {
+        option (google.api.http) = {
+            post: "/v1/cart/{product_id}"
+            body: "*"
+        };
+    }
+    rpc RemoveFromCart(RemoveFromCartRequest) returns (RemoveFromCartResponse) {
+        option (google.api.http) = {
+            delete: "/v1/cart/{product_id}"
+        };
+    }
+    rpc GetCart(GetCartRequest) returns (GetCartResponse) {
+        option (google.api.http) = {
+            get: "/v1/cart"
+        };
+    }
+    rpc Checkout(CheckoutRequest) returns (CheckoutResponse) {
+        option (google.api.http) = {
+            post: "/v1/cart/checkout"
+            body: "*"
+        };
+    }
+}
+
+message CartProduct {
+    int32 id = 1;
+    string product_name = 2;
+    int32 quantity = 3;
+    string description = 4;
+} 
+
+message Cart {
+    repeated CartProduct products = 2;
+}
+
+message AddToCartRequest {
+    int32 product_id = 1;
+    int32 quantity = 2;
+}
+
+message AddToCartResponse {
+    bool success = 1;
+}
+
+message RemoveFromCartRequest {
+    int32 product_id = 1;
+}
+
+message RemoveFromCartResponse {
+    bool success = 1;
+}
+
+message GetCartRequest {}
+
+message GetCartResponse {
+    Cart cart = 1;
+}
+
+message CheckoutRequest {}
+
+message CheckoutResponse {
+    bool success = 1;
+}

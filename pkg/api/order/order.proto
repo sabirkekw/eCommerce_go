@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option go_package = "github.com/sabirkekw/ecommerce_go/pkg/api/order;order";
+
+import "pkg/google/api/annotations.proto";
+
+message SingleOrder {
+    int32 id = 1;
+    int32 user_id = 2;
+    repeated ProductData products = 3;
+}
+
+message ProductData {
+    int32 product_id = 1;
+    int32 quantity = 2;
+}
+
+service OrderService {
+    rpc GetOrdersByUserID (GetOrdersByUserIDRequest) returns (GetOrdersByUserIDResponse) {
+        option (google.api.http) = {
+            get: "/v1/orders"
+        };
+    }
+    rpc DeleteOrder (DeleteOrderRequest) returns (DeleteOrderResponse) {
+        option (google.api.http) = {
+            delete: "/v1/orders/{order_id}"
+        };
+    }
+    rpc GetOrderByID (GetOrderByIDRequest) returns (GetOrderByIDResponse) {
+        option (google.api.http) = {
+            get: "/v1/orders/{order_id}"
+        };
+    }
+}
+message GetOrdersByUserIDRequest {}
+
+message GetOrdersByUserIDResponse {
+    repeated SingleOrder orders = 1;
+}
+
+message GetOrderByIDRequest {
+    int32 order_id = 1;
+}
+
+message GetOrderByIDResponse {
+    SingleOrder order = 1;
+}
+
+message DeleteOrderRequest {
+    int32 order_id = 1;
+}
+
+message DeleteOrderResponse {}

@@ -1,0 +1,236 @@
+services:
+  sso-service:
+    # now pulling from ghcr.io
+    # build:
+    #   context: .
+    #   dockerfile: sso-service/Dockerfile
+    image: ghcr.io/sabirkekw/ecommerce_go-sso-service:latest
+    environment:
+      - POSTGRES_HOST=postgres_sso
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=sso_db
+    ports:
+      - "8081:8081"
+      - "50051:50051"
+    depends_on:
+      - postgres_sso
+      - goose
+      - kafka-init
+    restart: "on-failure"
+    networks:
+      - ecommerce-network
+  products-service:
+    image: ghcr.io/sabirkekw/ecommerce_go-products-service:latest
+    # build:
+    #   context: .
+    #   dockerfile: products-service/Dockerfile
+    environment:
+      - POSTGRES_HOST=postgres_products
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=products_db
+    ports:
+      - "8080:8080"
+      - "50052:50052"
+    depends_on:
+      - postgres_products
+      - goose
+      - kafka-init
+    restart: "on-failure"
+    networks:
+      - ecommerce-network
+  order-service:
+    image: ghcr.io/sabirkekw/ecommerce_go-order-service:latest
+    # build:
+    #   context: .
+    #   dockerfile: order-service/Dockerfile
+    environment:
+      - POSTGRES_HOST=postgres_orders
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=orders_db
+    ports:
+      - "50053:50053"
+    depends_on:
+      - postgres_orders
+      - goose
+      - kafka-init
+    restart: "on-failure"
+    networks:
+      - ecommerce-network
+
+  cart-service:
+    image: ghcr.io/sabirkekw/ecommerce_go-cart-service:latest
+    # build:
+    #   context: .
+    #   dockerfile: cart-service/Dockerfile
+    environment:
+      - POSTGRES_HOST=postgres_cart
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=cart_db
+      - REDIS_HOST=redis_cart
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+      - KAFKA_BROKERS=kafka:9092
+    ports:
+      - "50054:50054"
+      - "8082:8082"
+    depends_on:
+      - postgres_cart
+      - redis_cart
+      - goose
+      - kafka-init
+    networks:
+      - ecommerce-network
+
+  postgres_sso:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sso_db
+    volumes:
+      - sso_pg_data:/var/lib/postgresql
+    networks:
+      - ecommerce-network
+  
+  postgres_orders:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_db
+    volumes:
+      - orders_pg_data:/var/lib/postgresql
+    networks:
+      - ecommerce-network
+  
+  postgres_products:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: products_db
+    volumes:
+      - products_pg_data:/var/lib/postgresql
+    networks:
+      - ecommerce-network
+  
+  postgres_cart:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cart_db
+    volumes:
+      - cart_pg_data:/var/lib/postgresql
+    networks:
+      - ecommerce-network
+
+  redis_cart:
+    image: redis:latest
+    environment:
+      - REDIS_PORT=6379
+      - REDIS_DATABASE=0
+    networks:
+      - ecommerce-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - ecommerce-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+      # KRaft-style required settings to avoid controller.listener.names error
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - ecommerce-network
+
+
+  goose:
+    image: ghcr.io/sabirkekw/ecommerce_go-goose:latest
+    # build: 
+    #   context: .
+    #   dockerfile: migrations/Dockerfile
+    environment:
+      - SSO_DB_STRING=host=postgres_sso user=postgres password=postgres dbname=sso_db
+      - ORDERS_DB_STRING=host=postgres_orders user=postgres password=postgres dbname=orders_db
+      - PRODUCTS_DB_STRING=host=postgres_products user=postgres password=postgres dbname=products_db
+      - CART_DB_STRING=host=postgres_cart user=postgres password=postgres dbname=cart_db
+    depends_on:
+      - postgres_orders
+      - postgres_products
+      - postgres_sso
+      - postgres_cart
+    networks:
+      - ecommerce-network
+
+  kafka-init:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - kafka
+    command: ["bash", "-c", "sleep 10 && kafka-topics --create --if-not-exists --topic checkout-topic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1"]
+    networks:
+      - ecommerce-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: ecommerce-nginx
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - sso-service
+      - products-service
+      - cart-service
+      - order-service
+    networks:
+      - ecommerce-network
+    restart: unless-stopped
+
+volumes:
+  sso_pg_data:
+    driver: local
+  orders_pg_data:
+    driver: local
+  products_pg_data:
+    driver: local
+  cart_pg_data:
+    driver: local
+
+networks:
+  ecommerce-network:
+    driver: bridge
