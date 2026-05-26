@@ -1,11 +1,11 @@
-name: CI for Auth Service
+name: CI for Products Service
 
 on:
   push:
     branches:
       - master
     paths:
-      - 'sso-service/**'
+      - 'products-service/**'
 
 permissions:
   contents: write
@@ -29,9 +29,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: sso-service/Dockerfile
+          file: products-service/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/ecommerce_go-sso-service:${{ github.sha }}
+          tags: ghcr.io/${{ github.repository_owner }}/ecommerce_go-products-service:${{ github.sha }}
 
       - name: Check out Infrastructure Repository
         uses: actions/checkout@v4
@@ -43,13 +43,13 @@ jobs:
       - name: Update Image Tag in Infrastructure Repo
         run: |
           cd infra-repo
-          sed -i 's|image: ghcr.io/.*|image: ghcr.io/${{ github.repository_owner }}/ecommerce_go-sso-service:${{ github.sha }}|g' k8s/base/sso-service/deployment.yaml
+          sed -i 's|image: ghcr.io/.*|image: ghcr.io/${{ github.repository_owner }}/ecommerce_go-products-service:${{ github.sha }}|g' k8s/base/products-service/deployment.yaml
 
       - name: Commit and Push to Infra Repo
         run: |
           cd infra-repo
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/base/sso-service/deployment.yaml
-          git commit -m "chore(gitops): update sso-service image to ${{ github.sha }} from eCommerce_go"
+          git add k8s/base/products-service/deployment.yaml
+          git commit -m "chore(gitops): update products-service image to ${{ github.sha }} from eCommerce_go"
           git push origin master
