@@ -30,6 +30,8 @@ func New(auth AuthService, logger *zap.SugaredLogger) *AuthServer {
 	}
 }
 
+// fdsfsdfsd
+
 func Register(grpc *grpc.Server, server *AuthServer) {
 	proto.RegisterAuthServer(grpc, server)
 }
