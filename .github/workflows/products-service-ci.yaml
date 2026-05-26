@@ -32,6 +32,8 @@ jobs:
           file: products-service/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/ecommerce_go-products-service:${{ github.sha }}
+          no-cache: true
+          provenance: false
 
       - name: Check out Infrastructure Repository
         uses: actions/checkout@v4
